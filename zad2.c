@@ -8,7 +8,7 @@
 #include <sys/sem.h>
 #include <memory.h>
 
-#define N 6
+#define N 6 //rozmiar bufora
 
 //**** Funkcje semafora *****//
 int utworzSem(int key)
@@ -113,8 +113,6 @@ int ilosc_linii(void)
 					linie++;
 			}
 		fclose(fil);
-		printf("ilosc linii :%d\n",linie );
-
 	return linie;
 }
 struct CircularBuffer
@@ -122,10 +120,8 @@ struct CircularBuffer
 int size;
 int beg;
 int end;
-int counter;
 int buf[];
 };
-
 
 int main(void)
 {
@@ -135,12 +131,11 @@ int main(void)
 	int i;
 	FILE *filw;
 	FILE *filr;
-
+	srand(time(NULL));
 	int ilosc_surowca = ilosc_linii();
 
-	int key = ftok(".",'A')+5;
-	printf("Klucz: %d \n",key);
-	int idShm = Shm_Create(key,10*sizeof(int));
+	int key = ftok(".",'s')+2;
+	int idShm = Shm_Create(key,(N+5)*sizeof(int));
 
 	int key1 = ftok(".",'f');
 	int idSem1 = utworzSem(key1);
@@ -148,19 +143,14 @@ int main(void)
 
 	int key2 = ftok(".",'g');
 	int idSem2 = utworzSem(key2);
-	printf("N  =  %d \n",N );
 	inicjalizujSem(idSem2,N);
-
-		wait(0);
 
 		pid = fork();
 		if(pid==-1) {exit(0);}
 		//****** Konsument   - proces potomny ******//
 		if(pid==0)
 		{ 
-			printf("Konsument \n");
 			filw=fopen("schowek2.txt","a");
-	
 			if(!filw)
 			{
 				printf("Nie można otworzyc pliku\n");
@@ -168,38 +158,30 @@ int main(void)
 			}
 			
 			void* wsk = Shm_Att(idShm);
-			
 			struct CircularBuffer *wskBuff = (struct CircularBuffer*)wsk;
-			//sekcja krytyczna sem1
-			//krotki sleep aby pierwszy prace zaczal producent
-			//sleep(3);
 			i=0;
 			while(i<ilosc_surowca)
 			{	
 				zamknijSem(idSem1);	
+
 				wskBuff->beg = i%wskBuff->size;
-				printf("towar: %d\n",wskBuff->buf[wskBuff->beg]);
+				printf("Odbieram towar: %d\n",wskBuff->buf[wskBuff->beg]);
 				fprintf(filw, "%d\n",wskBuff->buf[wskBuff->beg]);
-				wskBuff->counter--;
 				i++;
 				
 				otworzSem(idSem2);
 				sleep(rand()%2);
 			}
-	
+
 				Shm_Dt(wsk);
 				fclose(filw);
 				Shm_Delete(idShm);
-
 				//usuniecie semafora pierwszym procesem  producenta spowoduje bledy otwierania 
 				usunSem(idSem2);
 				usunSem(idSem1);
-
 			}
 			else
 			{
-				printf("Producent \n");
-
 				void * addr = Shm_Att(idShm);
 				struct CircularBuffer *surowce;
 				surowce = (struct CircularBuffer*)addr ;
@@ -216,21 +198,18 @@ int main(void)
 				}
 
 				i=0;
-				// sekcja krytyczna sem2
 				while(fscanf(filr,"%d",&surowiec) != EOF)
 				{
 					zamknijSem(idSem2);
+
 					surowce->end= i%surowce->size;
 					surowce->buf[surowce->end] = surowiec;
-					surowce->counter++;
-					printf("Surowiec %d\n",surowce->buf[surowce->end]);
+					printf("Wysyłam surowiec: %d\n",surowce->buf[surowce->end]);
 					i++;
-					sleep(rand()%2);
-					
+					sleep(rand()%3);
+	
 					otworzSem(idSem1);
 				}
-				//koniec sesji
-
 				//usuwanie i zamykanie 
 				Shm_Dt(addr);
 				fclose(filr);
