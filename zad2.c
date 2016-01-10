@@ -180,6 +180,7 @@ int main(void)
 				usunSem(idSem2);
 				usunSem(idSem1);
 			}
+			//****** Producent   - proces macierzysty ******//
 			else
 			{
 				void * addr = Shm_Att(idShm);

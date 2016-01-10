@@ -13,16 +13,14 @@ int main()
 	FILE *filw;
 	FILE *filr;
 	pip=pipe(potoki);
-
+	srand(time(NULL));
 		if(pip==0)
 		{
-		wait(0);
-
 		pid = fork();
 		if(pid==-1) {exit(0);}
+		//****** Konsument   - proces potomny ******//
 		if(pid==0)
 		{ 
-			printf("Konsument \n");
 			filw=fopen("schowek.txt","a");
 			if(!filw)
 			{
@@ -33,17 +31,17 @@ int main()
 			close(potoki[1]);
 				while(read(potoki[0], &towar, sizeof(int)) > 0)
 				{
-				printf("Odebrano towar: %d", towar);
+				
+				printf(" Odebrano towar: %d ", towar);
 				fprintf(filw, "%d\n",towar);
-				sleep(rand()%4);
+				sleep(rand()%2);
 				}
 				close(potoki[0]);
 				fclose(filw);
 			}
+			//****** Producent   - proces macierzysty ******//
 			else
 			{
-				printf("Producent \n");
-
 				filr=fopen("magazyn.txt","r");
 				if(!filr)
 				{
@@ -52,10 +50,9 @@ int main()
 				}
 
 				close(potoki[0]);
-				for(i=0;i<10;i++)
+				while(fscanf(filr,"%d",&surowiec) != EOF)
 				{
-					fscanf(filr,"%d",&surowiec);
-					dane_przetworzone = write(potoki[1], &surowiec, sizeof(int));
+					write(potoki[1], &surowiec, sizeof(int));
 					printf("Wyslano surowiec: %d \n",surowiec);
 					sleep(rand()%2);
 				}
