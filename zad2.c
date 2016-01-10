@@ -170,7 +170,7 @@ int main(void)
 				i++;
 				
 				otworzSem(idSem2);
-				sleep(rand()%2);
+				sleep(rand()%4);
 			}
 
 				Shm_Dt(wsk);
@@ -206,7 +206,7 @@ int main(void)
 					surowce->buf[surowce->end] = surowiec;
 					printf("Wysyłam surowiec: %d\n",surowce->buf[surowce->end]);
 					i++;
-					sleep(rand()%3);
+					sleep(rand()%5);
 	
 					otworzSem(idSem1);
 				}
